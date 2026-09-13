@@ -1,0 +1,147 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  phone         String?  @unique
+  passwordHash  String
+  name          String?
+  role          String   @default("USER")
+  status        String   @default("ACTIVE")
+  referralCode  String   @unique
+  referredById  String?
+  referredBy    User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]   @relation("Referrals")
+  pointsBalance Int      @default(0)
+  pendingPoints Int      @default(0)
+  upiId         String?
+  createdAt     DateTime @default(now())
+  lastActiveAt  DateTime @default(now())
+
+  transactions  Transaction[]
+  completions   TaskCompletion[]
+  withdrawals   Withdrawal[]
+  notifications Notification[]
+  adminAudits   AdminAudit[] @relation("AdminAudits")
+}
+
+model Task {
+  id               String   @id @default(cuid())
+  title            String
+  description      String
+  rewardPoints     Int
+  estimatedMinutes Int?
+  eligibility      String?
+  requirements     String?
+  provider         String   @default("ADMIN")
+  providerTaskId   String?
+  status           String   @default("ACTIVE")
+  type             String   @default("TASK")
+  dailyLimit       Int?
+  startAt          DateTime?
+  endAt            DateTime?
+  createdAt        DateTime @default(now())
+  completions      TaskCompletion[]
+}
+
+model TaskCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  providerRef String?
+  status      String   @default("PENDING")
+  points      Int?
+  createdAt   DateTime @default(now())
+  verifiedAt  DateTime?
+
+  @@unique([userId, taskId, providerRef])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String
+  points      Int
+  cashValue   Float?
+  provider    String?
+  providerRef String?
+  status      String   @default("COMPLETED")
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, providerRef])
+}
+
+model Withdrawal {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  amountPoints Int
+  amountCash   Float
+  upiId        String
+  status       String   @default("PENDING")
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+}
+
+model Referral {
+  id           String   @id @default(cuid())
+  referrerId   String
+  refereeId    String
+  status       String   @default("PENDING")
+  rewardPoints Int?
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  @@unique([referrerId, refereeId])
+}
+
+model ProviderEvent {
+  id            String   @id @default(cuid())
+  provider      String
+  eventId       String
+  payload       String
+  status        String   @default("RECEIVED")
+  userId        String?
+  transactionId String?
+  createdAt     DateTime @default(now())
+
+  @@unique([provider, eventId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AdminAudit {
+  id           String   @id @default(cuid())
+  adminId      String
+  admin        User     @relation("AdminAudits", fields: [adminId], references: [id])
+  action       String
+  targetUserId String?
+  details      String?
+  createdAt    DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
