@@ -4,12 +4,15 @@ import { useState } from 'react'
 export default function WithdrawPage() {
   const [form, setForm] = useState({ amountPoints: '', upiId: '' })
   const [msg, setMsg] = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setMsg('')
+    setError('')
+
     const res = await fetch('/api/withdrawals', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -20,10 +23,12 @@ export default function WithdrawPage() {
     })
     const data = await res.json()
     setLoading(false)
+
     if (!res.ok) {
-      setMsg(data.error || 'Withdrawal failed')
+      setError(data.error || 'Withdrawal failed')
       return
     }
+
     setMsg('Withdrawal requested! It will be reviewed by admin.')
     setForm({ amountPoints: '', upiId: '' })
   }
@@ -35,7 +40,8 @@ export default function WithdrawPage() {
         Minimum 10,000 points (₹100). Manual review within 24–48 hours.
       </p>
 
-      {msg && <p className="text-sm text-center text-blue-600">{msg}</p>}
+      {msg && <p className="text-sm text-green-600">{msg}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <form onSubmit={submit} className="space-y-4">
         <input
