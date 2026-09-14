@@ -33,7 +33,7 @@ export const cpxResearchProvider: RewardProvider = {
     return `https://offers.cpx-research.com/index.php?${params.toString()}`
   },
 
-  async handleWebhook(payload: any) {
+    async handleWebhook(payload: any) {
     const user_id = payload.user_id
     const trans_id = payload.trans_id
     const amount_local = payload.amount_local
@@ -60,13 +60,11 @@ export const cpxResearchProvider: RewardProvider = {
 
     // Verify signature if we have a secret configured
     if (secret && receivedHash) {
-      // CPX postback hash formula: MD5(trans_id + "-" + secure_hash)
       const expectedA = crypto
         .createHash('md5')
         .update(`${trans_id}-${secret}`)
         .digest('hex')
 
-      // Alternative formula (some CPX accounts use this):
       const expectedB = crypto
         .createHash('md5')
         .update(`${trans_id}-${user_id}-${secret}`)
@@ -85,15 +83,18 @@ export const cpxResearchProvider: RewardProvider = {
 
       console.log('[cpx] signature verified')
     } else if (secret && !receivedHash) {
-      // Postback arrived without hash — log warning but continue
       console.warn('[cpx] postback received without hash, skipping verification')
     }
 
-    // Status handling:
-    //   1 = success (credit points)
-    //   2 = chargeback / reversal (deduct points)
+    // amount_local is already in ZOVIRA COINS per CPX dashboard config
+    // (Currency Factor = 4980 coins per $1)
+    // Fallback: USD × 4980 if local is missing
+    const localAmt = parseFloat(String(amount_local || '0'))
+    const usdAmt = parseFloat(String(payload.amount_usd || '0'))
+    const points =
+      localAmt > 0 ? Math.round(localAmt) : Math.round(usdAmt * 4980)
+
     if (status === '1') {
-      const points = Math.round(parseFloat(String(amount_local || '0')) * 100)
       return {
         eventId: trans_id,
         userId: user_id,
@@ -105,7 +106,6 @@ export const cpxResearchProvider: RewardProvider = {
     }
 
     if (status === '2') {
-      const points = Math.round(parseFloat(String(amount_local || '0')) * 100)
       return {
         eventId: `chargeback-${trans_id}`,
         userId: user_id,
