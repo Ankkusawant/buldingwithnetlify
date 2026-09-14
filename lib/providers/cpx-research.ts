@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { RewardProvider, ProviderOffer } from './index'
+import { RewardProvider } from './index'
 
 export const cpxResearchProvider: RewardProvider = {
   id: 'cpx-research',
@@ -8,7 +8,7 @@ export const cpxResearchProvider: RewardProvider = {
   async getIframeUrl(
     userId: string,
     user: { email: string; name?: string | null }
-  ) {
+  ): Promise<string> {
     const appId = process.env.CPX_APP_ID
     const secret = process.env.CPX_SECURE_HASH
 
@@ -16,7 +16,6 @@ export const cpxResearchProvider: RewardProvider = {
       throw new Error('CPX Research credentials not configured')
     }
 
-    // Iframe hash: MD5(user_id + "-" + secure_hash)
     const secureHash = crypto
       .createHash('md5')
       .update(`${userId}-${secret}`)
@@ -33,7 +32,7 @@ export const cpxResearchProvider: RewardProvider = {
     return `https://offers.cpx-research.com/index.php?${params.toString()}`
   },
 
-    async handleWebhook(payload: any) {
+  async handleWebhook(payload: any, headers: any) {
     const user_id = payload.user_id
     const trans_id = payload.trans_id
     const amount_local = payload.amount_local
@@ -58,7 +57,6 @@ export const cpxResearchProvider: RewardProvider = {
       throw new Error('CPX missing required fields: user_id or trans_id')
     }
 
-    // Verify signature if we have a secret configured
     if (secret && receivedHash) {
       const expectedA = crypto
         .createHash('md5')
@@ -86,9 +84,6 @@ export const cpxResearchProvider: RewardProvider = {
       console.warn('[cpx] postback received without hash, skipping verification')
     }
 
-    // amount_local is already in ZOVIRA COINS per CPX dashboard config
-    // (Currency Factor = 4980 coins per $1)
-    // Fallback: USD × 4980 if local is missing
     const localAmt = parseFloat(String(amount_local || '0'))
     const usdAmt = parseFloat(String(payload.amount_usd || '0'))
     const points =
@@ -98,10 +93,10 @@ export const cpxResearchProvider: RewardProvider = {
       return {
         eventId: trans_id,
         userId: user_id,
-        points,
+        points: points,
         type: 'SURVEY_REWARD',
         providerRef: trans_id,
-        description: `CPX survey ${trans_id} (offer ${offer_id || 'n/a'})`,
+        description: `CPX survey ${trans_id}`,
       }
     }
 
