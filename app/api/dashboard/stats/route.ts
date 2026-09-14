@@ -10,11 +10,18 @@ export async function GET() {
       await getSetting('points_conversion', '100')
     )
 
-    const [transactions, lifetimeAgg] = await Promise.all([
-      prisma.transaction.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+
+    const [todayAgg, lifetimeAgg] = await Promise.all([
+      prisma.transaction.aggregate({
+        where: {
+          userId: user.id,
+          points: { gt: 0 },
+          status: 'COMPLETED',
+          createdAt: { gte: startOfToday },
+        },
+        _sum: { points: true },
       }),
       prisma.transaction.aggregate({
         where: {
@@ -26,17 +33,18 @@ export async function GET() {
       }),
     ])
 
+    const todayPoints = todayAgg._sum.points || 0
     const lifetimePoints = lifetimeAgg._sum.points || 0
 
     return NextResponse.json({
       pointsBalance: user.pointsBalance,
       pendingPoints: user.pendingPoints,
-      cashValue: user.pointsBalance / conversion,
+      availableCash: user.pointsBalance / conversion,
       pendingCash: user.pendingPoints / conversion,
+      todayPoints,
+      todayCash: todayPoints / conversion,
       lifetimePoints,
       lifetimeCash: lifetimePoints / conversion,
-      conversion,
-      transactions,
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 401 })
