@@ -31,6 +31,9 @@ model User {
   withdrawals   Withdrawal[]
   notifications Notification[]
   adminAudits   AdminAudit[] @relation("AdminAudits")
+
+  @@index([status, createdAt])
+  @@index([referredById])
 }
 
 model Task {
@@ -50,6 +53,10 @@ model Task {
   endAt            DateTime?
   createdAt        DateTime @default(now())
   completions      TaskCompletion[]
+
+  @@index([status, createdAt])
+  @@index([provider, status])
+  @@unique([provider, providerTaskId])
 }
 
 model TaskCompletion {
@@ -65,6 +72,8 @@ model TaskCompletion {
   verifiedAt  DateTime?
 
   @@unique([userId, taskId, providerRef])
+  @@index([userId, createdAt])
+  @@index([taskId, status])
 }
 
 model Transaction {
@@ -81,6 +90,8 @@ model Transaction {
   createdAt   DateTime @default(now())
 
   @@unique([provider, providerRef])
+  @@index([userId, createdAt])
+  @@index([type, status])
 }
 
 model Withdrawal {
@@ -94,6 +105,9 @@ model Withdrawal {
   adminNote    String?
   createdAt    DateTime @default(now())
   processedAt  DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Referral {
@@ -119,6 +133,7 @@ model ProviderEvent {
   createdAt     DateTime @default(now())
 
   @@unique([provider, eventId])
+  @@index([provider, status, createdAt])
 }
 
 model Notification {
@@ -144,4 +159,21 @@ model AdminAudit {
 model Setting {
   key   String @id
   value String
+}
+model Provider {
+  id              String   @id
+  name            String
+  type            String
+  integrationType String
+  enabled         Boolean  @default(true)
+  status          String   @default("ACTIVE")
+  revenueShare    Float    @default(0.6)
+  configPublic    Json?
+  configSecret    String?
+  kycRequired     Boolean  @default(false)
+  minPayout       Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([enabled, status])
 }

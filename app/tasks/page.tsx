@@ -1,6 +1,6 @@
-
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 type Task = {
   id: string
@@ -17,6 +17,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function load() {
     try {
@@ -28,7 +29,7 @@ export default function TasksPage() {
       }
       const data = await res.json()
       setTasks(data.tasks || [])
-    } catch (e) {
+    } catch {
       setError('Network error')
     } finally {
       setLoading(false)
@@ -42,12 +43,18 @@ export default function TasksPage() {
   async function complete(task: Task) {
     setCompleting(task.id)
     setError('')
+    setSuccess('')
     try {
-      const res = await fetch(`/api/tasks/${task.id}/complete`, { method: 'POST' })
+      const res = await fetch(`/api/tasks/${task.id}/complete`, {
+        method: 'POST',
+      })
+      const data = await res.json()
       if (!res.ok) {
-        setError('Failed to complete task')
+        setError(data.error || 'Failed to complete task')
       } else {
+        setSuccess(`+${data.points || task.rewardPoints} points!`)
         await load()
+        setTimeout(() => setSuccess(''), 3000)
       }
     } catch {
       setError('Network error')
@@ -64,6 +71,17 @@ export default function TasksPage() {
       <p className="text-sm text-gray-600">Complete tasks to earn points.</p>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
+      {success && (
+        <p className="text-green-600 text-sm font-semibold">{success}</p>
+      )}
+
+      <Link
+        href="/surveys"
+        className="block border rounded-xl p-5 bg-black text-white hover:bg-gray-800"
+      >
+        <p className="font-semibold text-lg">📋 Surveys</p>
+        <p className="text-sm opacity-80">Earn points from CPX Research</p>
+      </Link>
 
       {tasks.length === 0 && !error && (
         <p className="text-gray-500">No tasks available yet.</p>
@@ -74,7 +92,9 @@ export default function TasksPage() {
           <div key={t.id} className="border rounded-xl p-4">
             <div className="flex justify-between mb-1">
               <h3 className="font-semibold">{t.title}</h3>
-              <span className="text-green-600 font-semibold">+{t.rewardPoints}</span>
+              <span className="text-green-600 font-semibold">
+                +{t.rewardPoints}
+              </span>
             </div>
             <p className="text-sm text-gray-600 mb-3">{t.description}</p>
             <div className="flex justify-between items-center">

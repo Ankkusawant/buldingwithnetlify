@@ -2,6 +2,8 @@ import { RewardProvider, ProviderOffer } from './index'
 
 export const mockProvider: RewardProvider = {
   id: 'mock',
+  integrationType: 'offerwall',
+
   async getOffers(userId: string): Promise<ProviderOffer[]> {
     return [
       {
@@ -12,7 +14,6 @@ export const mockProvider: RewardProvider = {
         estimatedMinutes: 5,
         type: 'SURVEY',
         provider: 'mock',
-        url: '/tasks/mock-survey-1',
       },
       {
         id: 'mock-video-1',
@@ -22,10 +23,10 @@ export const mockProvider: RewardProvider = {
         estimatedMinutes: 1,
         type: 'VIDEO',
         provider: 'mock',
-        url: '/tasks/mock-video-1',
       },
     ]
   },
+
   async handleWebhook(payload: any) {
     return {
       eventId: payload.eventId,
