@@ -59,6 +59,12 @@ export default function LoginPage() {
           {loading ? 'Signing in…' : 'Login'}
         </button>
 
+        <p className="text-sm text-center">
+          <Link href="/forgot-password" className="text-gray-500 hover:text-black">
+            Forgot password?
+          </Link>
+        </p>
+
         <p className="text-sm text-center text-gray-600">
           New to Zovira?{' '}
           <Link href="/register" className="text-black font-medium underline">

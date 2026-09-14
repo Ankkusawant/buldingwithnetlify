@@ -26,6 +26,13 @@ model User {
   createdAt     DateTime @default(now())
   lastActiveAt  DateTime @default(now())
 
+  emailVerified      Boolean   @default(false)
+  phoneVerified      Boolean   @default(false)
+  verificationToken  String?
+  verificationExpiry DateTime?
+  resetToken         String?
+  resetExpiry        DateTime?
+
   transactions  Transaction[]
   completions   TaskCompletion[]
   withdrawals   Withdrawal[]
@@ -136,6 +143,24 @@ model ProviderEvent {
   @@index([provider, status, createdAt])
 }
 
+model Provider {
+  id              String   @id
+  name            String
+  type            String
+  integrationType String
+  enabled         Boolean  @default(true)
+  status          String   @default("ACTIVE")
+  revenueShare    Float    @default(0.6)
+  configPublic    Json?
+  configSecret    String?
+  kycRequired     Boolean  @default(false)
+  minPayout       Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([enabled, status])
+}
+
 model Notification {
   id        String   @id @default(cuid())
   userId    String
@@ -159,21 +184,4 @@ model AdminAudit {
 model Setting {
   key   String @id
   value String
-}
-model Provider {
-  id              String   @id
-  name            String
-  type            String
-  integrationType String
-  enabled         Boolean  @default(true)
-  status          String   @default("ACTIVE")
-  revenueShare    Float    @default(0.6)
-  configPublic    Json?
-  configSecret    String?
-  kycRequired     Boolean  @default(false)
-  minPayout       Float?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([enabled, status])
 }
